@@ -1,11 +1,9 @@
 /*
  * user/user_program.c  —  miniOS
  *
- * A sample user-space program.  This is the kind of code students
- * will write to exercise the kernel they are building.
- *
- * It intentionally uses only the wrapper functions from
- * syscall_wrappers.h — never raw syscall() calls, never stdio.
+ * A sample user-space program.  This is representative of
+ * the code that runs in the user space and calls the
+ * library (wrapper) functions to access miniOS functionality.
  *
  * Run via:  make run-demo
  */

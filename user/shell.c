@@ -3,11 +3,10 @@
  *
  * A minimal interactive shell running on top of the miniOS kernel.
  *
- * This gives students a starting point for the "shell" extension:
+ * This is a starting point for the "shell" extension:
  *   - The read/parse/dispatch loop is already here.
- *   - Students add built-in commands by filling in cmd_table[].
- *   - As they add more syscalls (fork, exec, open …) they can make
- *     the shell progressively more powerful.
+ *   - add built-in commands by filling in cmd_table[].
+ *   - capability of the shell will expand as we add more syscalls.
  *
  * Build:  make shell
  * Run:    ./build/shell
@@ -17,7 +16,7 @@
 #include "syscall_wrappers.h"
 
 /* ------------------------------------------------------------------ *
- *  Command table — students add rows here                            *
+ *  Command table — add rows in cmd_table[] for new commands          *
  * ------------------------------------------------------------------ */
 typedef void (*cmd_fn_t)(const char *args);
 
@@ -41,16 +40,7 @@ static const command_t cmd_table[] = {
     { "sleep", "sleep N milliseconds",      cmd_sleep },
     { "exit",  "exit the shell",            cmd_exit  },
 
-    /* ----------------------------------------------------------------
-     * STUDENTS: add your built-in commands here.
-     *
-     * Example:
-     *   { "ls",    "list files",        cmd_ls    },
-     *   { "cat",   "print a file",      cmd_cat   },
-     *   { "run",   "run a process",     cmd_run   },
-     * ---------------------------------------------------------------- */
-
-    { NULL, NULL, NULL }   /* sentinel */
+    { NULL, NULL, NULL }   /* sentinel - keep this last */
 };
 
 /* ------------------------------------------------------------------ *

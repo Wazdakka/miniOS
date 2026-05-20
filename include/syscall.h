@@ -34,7 +34,7 @@ typedef int64_t syscall_result_t;
 #define MINIOS_EPERM      -5   /* permission denied                   */
 
 /* ------------------------------------------------------------------ *
- *  System call numbers                                                *
+ *  System call numbers (when adding, use next sequential number)     *
  * ------------------------------------------------------------------ */
 typedef enum {
     /* --- I/O --- */
@@ -49,15 +49,6 @@ typedef enum {
     /* --- Memory --- */
     SYS_ALLOC  = 6,   /* alloc(size)  → ptr as uintptr_t  */
     SYS_FREE   = 7,   /* free(ptr)                        */
-
-    /* ----------------------------------------------------------------
-     * STUDENTS: add your new syscall numbers here.
-     *
-     * Example:
-     *   SYS_OPEN   = 8,
-     *   SYS_CLOSE  = 9,
-     *   SYS_FORK   = 10,
-     * ---------------------------------------------------------------- */
 
     SYS_MAX    /* sentinel — must stay last */
 } syscall_num_t;

@@ -63,6 +63,7 @@ syscall_result_t kernel_handle_syscall(syscall_num_t num,
     kprintf("[kernel] syscall %d  args=(%lu, %lu, %lu, %lu)\n",
             num, a0, a1, a2, a3);
 
+    // When adding kernel functions, add a case here, and a new "handle_*()" function
     switch (num) {
         case SYS_WRITE:  return handle_write (a0, a1, a2);
         case SYS_READ:   return handle_read  (a0, a1, a2);
@@ -71,14 +72,6 @@ syscall_result_t kernel_handle_syscall(syscall_num_t num,
         case SYS_SLEEP:  return handle_sleep (a0);
         case SYS_ALLOC:  return handle_alloc (a0);
         case SYS_FREE:   return handle_free  (a0);
-
-        /* ----------------------------------------------------------------
-         * STUDENTS: add your new cases here.
-         *
-         * Example:
-         *   case SYS_OPEN:  return handle_open(a0, a1, a2);
-         *   case SYS_FORK:  return handle_fork();
-         * ---------------------------------------------------------------- */
 
         default:
             kprintf("[kernel] unknown syscall %d — returning ENOSYS\n", num);
