@@ -35,6 +35,9 @@ syscall_result_t lib_read(int fd, char *buf, size_t len);
 /* ------------------------------------------------------------------ *
  *  Process control                                                    *
  * ------------------------------------------------------------------ */
+int lib_spawn(void *(thread_func_ptr)(void*), void *arg_ptr);
+
+void lib_process(); 
 
 /* Terminate the current process with the given exit status. */
 void lib_exit(int status);

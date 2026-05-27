@@ -9,7 +9,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <pthread.h>
 #include "syscall.h"
+
+
+typedef enum {PROC_READY, PROC_RUNNING, PROC_DONE} proc_state_t;
 
 /* ------------------------------------------------------------------ *
  *  File-descriptor table (tiny, fixed-size for simplicity)           *
@@ -28,9 +32,13 @@ typedef enum {
  * ------------------------------------------------------------------ */
 typedef struct {
     int     pid;
-    int     state;       /* 0 = running, 1 = sleeping, 2 = zombie    */
+    proc_state_t     state;
     int     exit_code;
     char    name[32];
+
+    void *(*thread_func_ptr)(void *);
+    void *thread_arg_ptr;
+    pthread_t thread;
 } process_t;
 
 /* ------------------------------------------------------------------ *
