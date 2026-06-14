@@ -59,6 +59,16 @@ void lib_process() {
     syscall(SYS_PROCESS, 0, 0, 0, 0);
 }
 
+void lib_lockinit() { syscall(SYS_LOCKINIT, 0, 0, 0, 0); }
+
+void lib_lock() { syscall(SYS_LOCK, 0, 0, 0, 0); }
+
+void lib_unlock()  { syscall(SYS_UNLOCK, 0, 0, 0, 0); }
+
+void lib_yield()  { syscall(SYS_YIELD, 0, 0, 0, 0); }
+
+void lib_done()  { syscall(SYS_DONE, 0, 0, 0, 0); }
+
 void lib_exit(int status)
 {
     syscall(SYS_EXIT, (uintptr_t)status, 0, 0, 0);

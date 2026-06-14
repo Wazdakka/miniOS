@@ -16,6 +16,7 @@
 #include <string.h>
 #include <unistd.h>    /* usleep */
 #include <time.h>      /* nanosleep fallback */
+#include <stdatomic.h>
 #include "../include/kernel.h"
 #include "../include/syscall.h"
 
@@ -28,6 +29,11 @@ static syscall_result_t handle_read  (uintptr_t fd, uintptr_t buf,
                                       uintptr_t len);
 static syscall_result_t handle_spawn (uintptr_t func_ptr, uintptr_t arg_ptr);
 static syscall_result_t handle_process();
+static syscall_result_t handle_lockinit();
+static syscall_result_t handle_lock();
+static syscall_result_t handle_unlock();
+static syscall_result_t handle_yield();
+static syscall_result_t handle_done();
 static syscall_result_t handle_exit  (uintptr_t status);
 static syscall_result_t handle_getpid(void);
 static syscall_result_t handle_sleep (uintptr_t ms);
@@ -39,6 +45,7 @@ static syscall_result_t handle_free  (uintptr_t ptr);
  * ------------------------------------------------------------------ */
 static int next_pid = 1;   /* process-ID counter */
 static int current_processes = 0;
+static atomic_flag lock = ATOMIC_FLAG_INIT;
 static process_t process_table[MAX_PROCESSES];
 
 /* ------------------------------------------------------------------ *
@@ -59,6 +66,11 @@ syscall_result_t kernel_handle_syscall(syscall_num_t num,
         case SYS_READ:   return handle_read  (a0, a1, a2);
         case SYS_SPAWN:  return handle_spawn(a0, a1);
         case SYS_PROCESS:return handle_process();
+        case SYS_LOCKINIT:return handle_lockinit();
+        case SYS_LOCK:   return handle_lock();
+        case SYS_UNLOCK: return handle_unlock();
+        case SYS_YIELD:  return handle_yield();
+        case SYS_DONE:   return handle_done();
         case SYS_EXIT:   return handle_exit  (a0);
         case SYS_GETPID: return handle_getpid();
         case SYS_SLEEP:  return handle_sleep (a0);
@@ -112,7 +124,7 @@ static syscall_result_t handle_spawn(uintptr_t func_ptr, uintptr_t arg_ptr) {
     process_table[i].state = PROC_READY;
     process_table[i].thread_func_ptr = (void *(*)(void *))func_ptr;
     process_table[i].thread_arg_ptr = (void *)arg_ptr;
-    return 0;
+    return MINIOS_OK;
 }
 
 static syscall_result_t handle_process() {
@@ -132,8 +144,23 @@ static syscall_result_t handle_process() {
         current_processes--;
     }
 
-    return 0;
+    return MINIOS_OK;
 }
+
+static syscall_result_t handle_lockinit() { return 0; }
+static syscall_result_t handle_lock() 
+{ 
+    while (atomic_flag_test_and_set(&lock)) { ; } //if unset, set it and return false; if set, simply return true
+    return MINIOS_OK;
+}
+static syscall_result_t handle_unlock() 
+{ 
+    atomic_flag_clear(&lock);
+    return MINIOS_OK;
+}
+static syscall_result_t handle_yield() { return 0; }
+static syscall_result_t handle_done() { return 0; }
+
 
 static syscall_result_t handle_exit(uintptr_t status)
 {

@@ -39,6 +39,16 @@ int lib_spawn(void *(thread_func_ptr)(void*), void *arg_ptr);
 
 void lib_process(); 
 
+void lib_lockinit();
+
+void lib_lock();
+
+void lib_unlock();
+
+void lib_yield();
+
+void lib_done();
+
 /* Terminate the current process with the given exit status. */
 void lib_exit(int status);
 

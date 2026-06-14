@@ -43,15 +43,20 @@ typedef enum {
     SYS_READ   = 2,   /* read(fd, buf, len)               */
 
     /* --- Process control --- */
-    SYS_SPAWN = 3,
+    SYS_SPAWN  = 3,
     SYS_PROCESS = 4,
-    SYS_EXIT   = 5,   /* exit(status)                     */
-    SYS_GETPID = 6,   /* getpid()                         */
-    SYS_SLEEP  = 7,   /* sleep(milliseconds)              */
+    SYS_LOCKINIT = 5,
+    SYS_LOCK   = 6,
+    SYS_UNLOCK = 7,
+    SYS_YIELD  = 8,
+    SYS_DONE   = 9,
+    SYS_EXIT   = 10,   /* exit(status)                     */
+    SYS_GETPID = 11,   /* getpid()                         */
+    SYS_SLEEP  = 12,   /* sleep(milliseconds)              */
 
     /* --- Memory --- */
-    SYS_ALLOC  = 8,   /* alloc(size)  → ptr as uintptr_t  */
-    SYS_FREE   = 9,   /* free(ptr)                        */
+    SYS_ALLOC  = 13,   /* alloc(size)  → ptr as uintptr_t  */
+    SYS_FREE   = 14,   /* free(ptr)                        */
 
     SYS_MAX    /* sentinel — must stay last */
 } syscall_num_t;
