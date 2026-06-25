@@ -29,11 +29,14 @@ int main(void)
 void *processBody(void *pokemonName) {
     lib_lockinit();
     for (int i = 0; i < 100; i++) {
+        lib_yield();
         lib_lock();
         lib_puts("I choose you, ");
         lib_puts((char*)pokemonName);
         lib_puts("!\n");
         lib_unlock();
+        lib_sleep(250);
     }
+    lib_done();
     return NULL;
 }

@@ -10,15 +10,14 @@
  */
 
 #define _POSIX_C_SOURCE 200809L
-#define MAX_PROCESSES 2
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>    /* usleep */
 #include <time.h>      /* nanosleep fallback */
-#include <stdatomic.h>
 #include "../include/kernel.h"
 #include "../include/syscall.h"
+#include "../include/kernel_utils.h"
 
 /* ------------------------------------------------------------------ *
  *  Forward declarations for internal helpers                         *
@@ -43,10 +42,12 @@ static syscall_result_t handle_free  (uintptr_t ptr);
 /* ------------------------------------------------------------------ *
  *  Simple kernel state                                               *
  * ------------------------------------------------------------------ */
-static int next_pid = 1;   /* process-ID counter */
-static int current_processes = 0;
-static atomic_flag lock = ATOMIC_FLAG_INIT;
-static process_t process_table[MAX_PROCESSES];
+int next_pid = 1;   /* process-ID counter */
+int current_processes = 0;
+atomic_flag lock = ATOMIC_FLAG_INIT;
+process_t process_table[MAX_PROCESSES];
+process_t* current_process_ptr = NULL;
+pthread_mutex_t process_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* ------------------------------------------------------------------ *
  *  Dispatcher — the heart of the kernel                              *
@@ -116,33 +117,33 @@ static syscall_result_t handle_read(uintptr_t fd,
 }
 
 static syscall_result_t handle_spawn(uintptr_t func_ptr, uintptr_t arg_ptr) {
-    if (current_processes >= MAX_PROCESSES) { return MINIOS_EMAXPROCESSES; }
-    int i = current_processes++;
-    int pid = next_pid++;
+    // if (current_processes >= MAX_PROCESSES) { return MINIOS_EMAXPROCESSES; }
+    // int i = current_processes++;
+    // int pid = next_pid++;
 
-    process_table[i].pid = pid;
-    process_table[i].state = PROC_READY;
-    process_table[i].thread_func_ptr = (void *(*)(void *))func_ptr;
-    process_table[i].thread_arg_ptr = (void *)arg_ptr;
+    // process_table[i].pid = pid;
+    // process_table[i].state = PROC_READY;
+    // process_table[i].thread_func_ptr = (void *(*)(void *))func_ptr;
+    // process_table[i].thread_arg_ptr = (void *)arg_ptr;
     return MINIOS_OK;
 }
 
 static syscall_result_t handle_process() {
-    for (int i = 0; i < current_processes; i++) {
-        pthread_create(
-        &process_table[i].thread, //receptacle for data about thread
-        NULL,
-        process_table[i].thread_func_ptr,
-        process_table[i].thread_arg_ptr
-        );
-        process_table[i].state = PROC_RUNNING;
-    }
+    // for (int i = 0; i < current_processes; i++) {
+    //     pthread_create(
+    //     &process_table[i].thread, //receptacle for data about thread
+    //     NULL,
+    //     process_table[i].thread_func_ptr,
+    //     process_table[i].thread_arg_ptr
+    //     );
+    //     process_table[i].state = PROC_RUNNING;
+    // }
 
-    while (current_processes > 0) {
-        pthread_join(process_table[current_processes - 1].thread, NULL);
-        process_table[current_processes - 1].state = PROC_DONE;
-        current_processes--;
-    }
+    // while (current_processes > 0) {
+    //     pthread_join(process_table[current_processes - 1].thread, NULL);
+    //     process_table[current_processes - 1].state = PROC_DONE;
+    //     current_processes--;
+    // }
 
     return MINIOS_OK;
 }
@@ -173,7 +174,7 @@ static syscall_result_t handle_getpid(void)
 {
     /* In a real kernel this would return the running process's PID.
      * Here we hand out incrementing IDs to illustrate the concept. */
-    return (syscall_result_t)next_pid++;
+    return current_process_ptr->pid;
 }
 
 static syscall_result_t handle_sleep(uintptr_t ms)
