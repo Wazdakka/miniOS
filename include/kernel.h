@@ -35,11 +35,11 @@ typedef enum {
  *  Extend this struct as you add scheduling, memory management, etc. *
  * ------------------------------------------------------------------ */
 typedef struct {
-    int     pid;
+    int     pid; //0 iff nothing's there
     proc_state_t     state;
     int     exit_code;
     char    name[32];
-    bool run_flag;
+    bool run_flag; //safety switch on condition to catch spurious wakeups
     pthread_cond_t condition;
     struct timespec slice_expire_time;
     pthread_t thread;
@@ -73,5 +73,6 @@ extern atomic_flag lock;
 extern process_t process_table[];
 extern process_t* current_process_ptr;
 extern pthread_mutex_t process_lock;
+extern bool is_kernel_initialized;
 
 #endif /* MINIOS_KERNEL_H */

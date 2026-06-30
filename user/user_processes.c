@@ -28,7 +28,7 @@ int main(void)
 
 void *processBody(void *pokemonName) {
     lib_lockinit();
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
         lib_yield();
         lib_lock();
         lib_puts("I choose you, ");

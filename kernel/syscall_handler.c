@@ -42,6 +42,7 @@ static syscall_result_t handle_free  (uintptr_t ptr);
 /* ------------------------------------------------------------------ *
  *  Simple kernel state                                               *
  * ------------------------------------------------------------------ */
+bool is_kernel_initialized = false;
 int next_pid = 1;   /* process-ID counter */
 int current_processes = 0;
 atomic_flag lock = ATOMIC_FLAG_INIT;
@@ -60,6 +61,12 @@ syscall_result_t kernel_handle_syscall(syscall_num_t num,
 {
     kprintf("[kernel] syscall %d  args=(%lu, %lu, %lu, %lu)\n",
             num, a0, a1, a2, a3);
+
+    pthread_mutex_lock(&process_lock); 
+    if (!is_kernel_initialized) {
+        kernel_init();
+    }
+    pthread_mutex_unlock(&process_lock); 
 
     // When adding kernel functions, add a case here, and a new "handle_*()" function
     switch (num) {
@@ -117,34 +124,34 @@ static syscall_result_t handle_read(uintptr_t fd,
 }
 
 static syscall_result_t handle_spawn(uintptr_t func_ptr, uintptr_t arg_ptr) {
-    // if (current_processes >= MAX_PROCESSES) { return MINIOS_EMAXPROCESSES; }
-    // int i = current_processes++;
-    // int pid = next_pid++;
+    pthread_mutex_lock(&process_lock); //modifying kernel state, so lock
+    int empty_index = -1;
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i].pid == 0) {
+            empty_index = i;
+            break;
+        }
+    }
+    if (empty_index == -1) { return MINIOS_EMAXPROCESSES; }
+    process_table[empty_index].pid = next_pid++;
 
-    // process_table[i].pid = pid;
-    // process_table[i].state = PROC_READY;
-    // process_table[i].thread_func_ptr = (void *(*)(void *))func_ptr;
-    // process_table[i].thread_arg_ptr = (void *)arg_ptr;
-    return MINIOS_OK;
+    process_table[empty_index].state = PROC_READY;
+    process_table[empty_index].run_flag = false;
+    process_table[empty_index].condition = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+    pthread_create(
+        &process_table[empty_index].thread, //receptacle for data about thread
+        NULL,
+        (void *(*)(void *))func_ptr,
+        (void *)arg_ptr
+    );
+    current_processes++;
+    
+    pthread_mutex_unlock(&process_lock); 
+    return process_table[empty_index].pid;
 }
 
 static syscall_result_t handle_process() {
-    // for (int i = 0; i < current_processes; i++) {
-    //     pthread_create(
-    //     &process_table[i].thread, //receptacle for data about thread
-    //     NULL,
-    //     process_table[i].thread_func_ptr,
-    //     process_table[i].thread_arg_ptr
-    //     );
-    //     process_table[i].state = PROC_RUNNING;
-    // }
-
-    // while (current_processes > 0) {
-    //     pthread_join(process_table[current_processes - 1].thread, NULL);
-    //     process_table[current_processes - 1].state = PROC_DONE;
-    //     current_processes--;
-    // }
-
+    pthread_exit(NULL); //kill main thread without killing any other threads
     return MINIOS_OK;
 }
 
@@ -159,8 +166,41 @@ static syscall_result_t handle_unlock()
     atomic_flag_clear(&lock);
     return MINIOS_OK;
 }
-static syscall_result_t handle_yield() { return 0; }
-static syscall_result_t handle_done() { return 0; }
+static syscall_result_t handle_yield() { 
+    pthread_mutex_lock(&process_lock);
+    process_t *self_process = find_process_self();
+
+    if (current_process_ptr == NULL) { //this is the first thread; begin running
+        swap_process_in(self_process);
+    } else {
+        if (current_process_ptr != self_process) {
+            swap_process_out(self_process); //someone else is running, don't interrupt them
+        } else { //we're running, and we're checking if our timeslice is up
+            bool times_up = is_timeslice_expired(&self_process->slice_expire_time);
+            if (times_up) {
+                if (swap_in_ready_process() != NULL) {
+                    //swap ourselves out iff 1. timeslice is up, and 2. another thread is ready to run
+                    swap_process_out(self_process);
+                }
+            //if time isn't up, continue thread as usual
+            }
+        }
+    }
+
+    pthread_mutex_unlock(&process_lock);
+    return 0; 
+}
+static syscall_result_t handle_done() { 
+    
+    pthread_mutex_lock(&process_lock);
+    current_process_ptr->pid = 0;
+    if (swap_in_ready_process() == NULL) {
+        current_process_ptr = NULL;
+    }
+    current_processes--;
+    pthread_mutex_unlock(&process_lock);
+    return 0;
+}
 
 
 static syscall_result_t handle_exit(uintptr_t status)
