@@ -47,7 +47,7 @@ int next_pid = 1;   /* process-ID counter */
 int current_processes = 0;
 atomic_flag lock = ATOMIC_FLAG_INIT;
 process_t process_table[MAX_PROCESSES];
-process_t* current_process_ptr = NULL;
+process_t* current_process_ptrs[NUM_CORES] = { NULL };
 pthread_mutex_t process_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* ------------------------------------------------------------------ *
@@ -170,20 +170,20 @@ static syscall_result_t handle_yield() {
     pthread_mutex_lock(&process_lock);
     process_t *self_process = find_process_self();
 
-    if (current_process_ptr == NULL) { //this is the first thread; begin running
-        swap_process_in(self_process);
-    } else {
-        if (current_process_ptr != self_process) {
-            swap_process_out(self_process); //someone else is running, don't interrupt them
-        } else { //we're running, and we're checking if our timeslice is up
-            bool times_up = is_timeslice_expired(&self_process->slice_expire_time);
-            if (times_up) {
-                if (swap_in_ready_process() != NULL) {
-                    //swap ourselves out iff 1. timeslice is up, and 2. another thread is ready to run
-                    swap_process_out(self_process);
-                }
-            //if time isn't up, continue thread as usual
-            }
+    if (self_process->state == PROC_RUNNING) {
+        bool times_up = is_timeslice_expired(&self_process->slice_expire_time);
+        if (times_up) {
+        if (swap_in_ready_process(find_core_for_process(self_process)) != NULL) {
+            //swap ourselves out iff 1. timeslice is up, and 2. another thread is ready to run
+            swap_process_out(self_process);
+        }
+    }
+    } else { //we aren't running, swap in if able
+        int open_core = find_idle_core();
+        if (open_core != -1) {
+            swap_process_in(self_process, open_core); 
+        } else {
+            swap_process_out(self_process);
         }
     }
 
@@ -192,10 +192,13 @@ static syscall_result_t handle_yield() {
 }
 static syscall_result_t handle_done() { 
     
+    process_t *self_process = find_process_self();
+    int self_core = find_core_for_process(self_process);
+
     pthread_mutex_lock(&process_lock);
-    current_process_ptr->pid = 0;
-    if (swap_in_ready_process() == NULL) {
-        current_process_ptr = NULL;
+    self_process->pid = 0;
+    if (swap_in_ready_process(self_core) == NULL) {
+        current_process_ptrs[self_core] = NULL;
     }
     current_processes--;
     pthread_mutex_unlock(&process_lock);
@@ -214,7 +217,7 @@ static syscall_result_t handle_getpid(void)
 {
     /* In a real kernel this would return the running process's PID.
      * Here we hand out incrementing IDs to illustrate the concept. */
-    return current_process_ptr->pid;
+    return find_process_self()->pid;
 }
 
 static syscall_result_t handle_sleep(uintptr_t ms)

@@ -17,9 +17,10 @@ void *processBody(void *pokemonName);
 int main(void)
 {
     lib_puts("=== miniOS user-space demo ===\n\n");
-
+    lib_lockinit();
     lib_spawn(processBody, "lapras");
     lib_spawn(processBody, "charizard");
+    lib_spawn(processBody, "sudowudo");
     lib_process();
 
     lib_puts("\nAll done. Exiting.\n");
@@ -27,7 +28,6 @@ int main(void)
 }
 
 void *processBody(void *pokemonName) {
-    lib_lockinit();
     for (int i = 0; i < 10; i++) {
         lib_yield();
         lib_lock();
