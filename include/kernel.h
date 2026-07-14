@@ -15,7 +15,7 @@
 #include "syscall.h"
 
 
-typedef enum {PROC_READY, PROC_RUNNING, PROC_DONE} proc_state_t;
+typedef enum {PROC_READY, PROC_RUNNING, PROC_WAIT_LOCK, PROC_DONE} proc_state_t;
 
 #define MAX_PROCESSES 5
 #define NUM_CORES 2
@@ -71,7 +71,8 @@ void kprintf(const char *fmt, ...);
 extern int next_pid;   /* process-ID counter */
 extern int current_processes;
 extern int lock_owner_pid;
-extern atomic_flag lock;
+extern bool lock;
+extern int lock_owner_pid;
 extern process_t process_table[];
 extern process_t* current_process_ptrs[];
 extern pthread_mutex_t process_lock;

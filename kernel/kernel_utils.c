@@ -1,7 +1,7 @@
 #include "../include/kernel_utils.h"
 
-void swap_process_out(process_t *process_ptr) {
-    process_ptr->state = PROC_READY;
+void swap_process_out(process_t *process_ptr, proc_state_t new_state) {
+    process_ptr->state = new_state;
     process_ptr->run_flag = false;
     while (!process_ptr->run_flag) {
         pthread_cond_wait(&process_ptr->condition, &process_lock);

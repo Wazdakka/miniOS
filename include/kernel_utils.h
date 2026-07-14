@@ -3,7 +3,7 @@
 //make this process ready to run, but not running currently
 //NOTE: process_lock should be engaged before calling this
 //note: it is not ensured that swap_process_out will precede swap_process_in when changing processes
-void swap_process_out(process_t *process_ptr);
+void swap_process_out(process_t *process_ptr, proc_state_t new_state);
 
 //pre: process_ptr is PROC_READY, process_lock is engaged
 void swap_process_in(process_t *process_ptr, int core_id);
