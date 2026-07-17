@@ -163,10 +163,9 @@ static syscall_result_t handle_lock()
     process_t *self_process = find_process_self();
     if (lock && self_process->pid != lock_owner_pid) { //locking twice in a row only half-handled, broken by multiple unlocks
         swap_process_out(find_process_self(), PROC_WAIT_LOCK);
-    } else if (!lock) {
-        lock = true;
-        lock_owner_pid = self_process->pid;
     }
+    lock = true; //we've been reawoken after the lock was released, so grab it
+    lock_owner_pid = self_process->pid;
     pthread_mutex_unlock(&process_lock); 
     return MINIOS_OK;
 }
@@ -202,6 +201,7 @@ static syscall_result_t handle_yield() {
         if (swap_in_ready_process(find_core_for_process(self_process)) != NULL) {
             //swap ourselves out iff 1. timeslice is up, and 2. another thread is ready to run
             swap_process_out(self_process, PROC_READY);
+            current_process_ptrs[find_core_for_process(self_process)] = NULL;
         }
     }
     } else { //we aren't running, swap in if able
